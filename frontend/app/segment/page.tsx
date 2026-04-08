@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useSession } from "@/lib/auth-client";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -42,6 +43,7 @@ interface HistoryEntry {
 type ViewTab = "overlay" | "mask" | "original" | "heatmap";
 
 export default function SegmentPage() {
+  const { data: session } = useSession();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [threshold, setThreshold] = useState(0.5);
@@ -112,6 +114,25 @@ export default function SegmentPage() {
         { id: nextId.current++, filename: file.name, overlay: data.overlay, result: data },
         ...prev,
       ]);
+
+      // Auto-save to DB if authenticated
+      if (session) {
+        fetch("/api/segmentation/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: file.name,
+            threshold: data.metrics.threshold,
+            road_percentage: data.metrics.road_percentage,
+            avg_confidence: data.metrics.avg_confidence,
+            inference_time_ms: data.metrics.inference_time_ms,
+            image_width: data.metrics.image_size[0],
+            image_height: data.metrics.image_size[1],
+            overlay_b64: data.overlay,
+            mask_b64: data.mask,
+          }),
+        }).catch(() => { /* silent */ });
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Prediction failed");
     } finally {

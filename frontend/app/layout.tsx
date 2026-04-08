@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+import AuthNavbar from "./components/Navbar";
+import { ThemeProvider } from "./components/ThemeProvider";
 export const metadata: Metadata = {
   title: "ATLAS — Road Segmentation",
   description:
@@ -13,35 +14,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          themes={["light", "dark"]}
+          disableTransitionOnChange
+        >
+          <AuthNavbar />
+          <main>{children}</main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
-  );
-}
-
-/* ---- Inline Navbar ---- */
-function Navbar() {
-  return (
-    <nav className="navbar">
-      <a href="/" className="navbar-brand">
-        <span className="logo-icon">🗺️</span>
-        ATLAS
-      </a>
-      <div className="navbar-links">
-        <a href="/">Home</a>
-        <a href="/segment">Segment</a>
-        <a href="/compare">Compare</a>
-        <a href="/batch">Batch</a>
-        <a href="/about">About</a>
-        <a href="/segment" className="nav-cta">
-          Try Now
-        </a>
-      </div>
-    </nav>
   );
 }
 
