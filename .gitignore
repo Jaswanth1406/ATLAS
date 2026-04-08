@@ -59,3 +59,8 @@ wandb/
 checkpoints/
 datasets/
 results/
+create_table.js
+
+# ===== Gemini / AI Workspace =====
+.gemini/
+.agents/

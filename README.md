@@ -9,10 +9,12 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Better Auth](https://img.shields.io/badge/Better_Auth-1.x-6366F1?style=for-the-badge)](https://www.better-auth.com/)
+[![Neon](https://img.shields.io/badge/Neon-PostgreSQL-00E599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
 [![License](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
-*Full-stack AI road segmentation platform — UNet deep learning + 5 classical methods, served via FastAPI with an interactive Next.js web interface.*
+*Full-stack AI road segmentation platform — UNet deep learning + 5 classical methods, served via FastAPI with an interactive Next.js web interface, Better Auth authentication, and Neon PostgreSQL for persistent storage.*
 
 </div>
 
@@ -24,8 +26,10 @@
 - [Key Features](#-key-features)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
+- [Authentication & Access Control](#-authentication--access-control)
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
+- [Environment Variables](#-environment-variables)
 - [Pages & Features](#-pages--features)
 - [API Reference](#-api-reference)
 - [Model Details](#-model-details)
@@ -51,6 +55,8 @@ Traditional road segmentation struggles with real-world conditions — shadows, 
 - **5 Classical Methods** — Otsu, Adaptive Mean/Gaussian, Sauvola, Niblack
 - **FastAPI Backend** — 7 API endpoints for inference, comparison, pipeline visualization, batch processing, and annotation
 - **Next.js Frontend** — Premium dark-themed UI with interactive segmentation, method comparison, batch processing, and ground truth annotation
+- **Better Auth** — Email/password + Google OAuth authentication
+- **Neon PostgreSQL** — Cloud database for persistent segmentation result storage
 
 ---
 
@@ -59,6 +65,8 @@ Traditional road segmentation struggles with real-world conditions — shadows, 
 | Feature | Description |
 |---------|-------------|
 | 🧠 **Deep Learning Model** | UNet + ResNet34 achieving 85%+ IoU, ~15ms GPU inference |
+| 🔐 **Authentication** | Email/password + Google OAuth via Better Auth |
+| 💾 **Persistent Storage** | Segmentation results saved to Neon PostgreSQL for logged-in users |
 | ⚔️ **Method Comparison** | Side-by-side comparison of UNet vs 5 classical thresholding methods |
 | 🌡️ **Confidence Heatmap** | Color-coded probability map showing model certainty per pixel |
 | 🔬 **Pipeline Visualizer** | Step-by-step view: resize → normalize → inference → sigmoid → mask → overlay |
@@ -66,6 +74,7 @@ Traditional road segmentation struggles with real-world conditions — shadows, 
 | ✏️ **Ground Truth Annotation** | Draw road masks on a canvas, compute IoU & Dice vs model prediction |
 | 📦 **Batch Processing** | Upload multiple images, get results + downloadable CSV report |
 | 💾 **Download Results** | Export mask, overlay, heatmap as PNG or full ZIP package |
+| 📁 **Past Results** | View all saved segmentation history with detail view |
 | 🕘 **Session History** | Gallery of past predictions — click to reload any result |
 | 🌐 **REST API** | 7 FastAPI endpoints with OpenAPI docs at `/docs` |
 
@@ -74,23 +83,28 @@ Traditional road segmentation struggles with real-world conditions — shadows, 
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                          ATLAS Architecture                         │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌──────────┐     ┌───────────────┐     ┌─────────────────────┐     │
-│  │ Next.js  │────▶│   FastAPI      │────▶│  UNet Model         │     │
-│  │ Frontend │◀────│   Backend      │◀────│  (TorchScript)      │     │
-│  │ :3000    │     │   :8000        │     │  + Classical Methods │     │
-│  └──────────┘     └───────────────┘     └─────────────────────┘     │
-│                                                                      │
-│  5 Pages:          7 Endpoints:          UNet + 5 Classical:         │
-│  Home, Segment,    /predict, /compare,   Otsu, Adaptive Mean,       │
-│  Compare, Batch,   /pipeline, /download  Adaptive Gaussian,         │
-│  About             /threshold-grid,      Sauvola, Niblack           │
-│                    /compute-metrics,                                  │
-│                    /predict/batch                                     │
-└──────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                           ATLAS Architecture                              │
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  ┌──────────┐     ┌───────────────┐     ┌─────────────────────┐          │
+│  │ Next.js  │────▶│   FastAPI      │────▶│  UNet Model         │          │
+│  │ Frontend │◀────│   Backend      │◀────│  (TorchScript)      │          │
+│  │ :3000    │     │   :8000        │     │  + Classical Methods │          │
+│  └────┬─────┘     └───────────────┘     └─────────────────────┘          │
+│       │                                                                    │
+│       │           ┌───────────────┐     ┌─────────────────────┐          │
+│       └──────────▶│  Better Auth  │────▶│  Neon PostgreSQL     │          │
+│                   │  (Sessions)   │     │  (Users + Results)   │          │
+│                   └───────────────┘     └─────────────────────┘          │
+│                                                                           │
+│  Guest Pages:      Auth Pages:          Backend Endpoints:                │
+│  Home, Segment,    Dashboard, Results,  /predict, /compare,              │
+│  About, Sign In    Segment (saves),     /pipeline, /download,            │
+│                    Batch, Compare        /threshold-grid,                  │
+│                                         /compute-metrics,                 │
+│                                         /predict/batch                    │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -98,13 +112,39 @@ Traditional road segmentation struggles with real-world conditions — shadows, 
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | Next.js 15, TypeScript, CSS | 5-page web UI with interactive tools |
+|-------|-----------|---------| 
+| **Frontend** | Next.js 16, TypeScript, Tailwind v4 | 8-page web UI with interactive tools |
+| **Authentication** | Better Auth | Email/password + Google OAuth |
+| **Database** | Neon PostgreSQL | User accounts + saved segmentation results |
 | **Backend** | FastAPI, Uvicorn | REST API with 7 endpoints |
 | **DL Model** | PyTorch, segmentation-models-pytorch | UNet with ResNet34 encoder |
 | **Inference** | TorchScript | Optimized production model |
 | **Classical CV** | OpenCV, NumPy | 5 thresholding methods + CLAHE preprocessing |
 | **Image Processing** | OpenCV, Pillow | Overlay, heatmap, encoding |
+
+---
+
+## 🔐 Authentication & Access Control
+
+ATLAS uses **Better Auth** for authentication with two providers:
+
+| Provider | Method |
+|----------|--------|
+| **Email/Password** | Register with name, email, and password |
+| **Google OAuth** | One-click sign in with Google |
+
+### Access Levels
+
+| Page | Guest | Authenticated |
+|------|-------|---------------|
+| **Home** (`/`) | ✅ | — |
+| **Segment** (`/segment`) | ✅ (no save) | ✅ (auto-saves to DB) |
+| **About** (`/about`) | ✅ | — |
+| **Sign In/Up** | ✅ | Redirects to Dashboard |
+| **Dashboard** (`/dashboard`) | 🔒 → Sign In | ✅ |
+| **Past Results** (`/results`) | 🔒 → Sign In | ✅ |
+| **Compare** (`/compare`) | 🔒 → Sign In | ✅ |
+| **Batch** (`/batch`) | 🔒 → Sign In | ✅ |
 
 ---
 
@@ -149,6 +189,38 @@ backend/models/
 cd frontend
 npm install
 ```
+
+### 5. Database Setup
+
+Run the Better Auth migration to create auth tables:
+
+```bash
+cd frontend
+npx @better-auth/cli migrate
+```
+
+---
+
+## 🔑 Environment Variables
+
+Create `frontend/.env`:
+
+```env
+# Auth
+BETTER_AUTH_SECRET=<random-32-char-string>
+BETTER_AUTH_URL=http://localhost:3000
+
+# Database
+NEON_DATABASE_URL=postgresql://<user>:<pass>@<host>/<db>?sslmode=require
+
+# Google OAuth
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+```
+
+> **Neon PostgreSQL**: Get a free database at [neon.tech](https://neon.tech). The connection string is available in your Neon project dashboard.
+
+> **Google OAuth**: Set up credentials in [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Set the redirect URI to `http://localhost:3000/api/auth/callback/google`.
 
 ---
 
@@ -279,11 +351,13 @@ Outputs for each image: `<name>_mask.png` + `<name>_overlay.png` saved to `--out
 
 ## 🖥️ Pages & Features
 
-### 1. 🏠 Home (`/`)
+### Guest Pages (no login required)
+
+#### 1. 🏠 Home (`/`)
 Hero section with project overview, stats bar (85%+ IoU, ~15ms inference), and feature cards.
 
-### 2. 🔍 Segment (`/segment`)
-The main interactive page with everything:
+#### 2. 🔍 Segment (`/segment`)
+Upload and run AI segmentation. Results are **session-only** for guests.
 - **Upload** — Drag-and-drop or browse
 - **4-Tab Viewer** — Overlay, Mask, Heatmap, Original
 - **Metrics** — Inference time, road coverage %, confidence
@@ -293,21 +367,34 @@ The main interactive page with everything:
 - **Canvas Annotation** — Draw ground truth → compute IoU & Dice
 - **Session History** — Gallery of past predictions
 
-### 3. ⚔️ Compare (`/compare`)
-Upload one image, see **UNet vs 5 classical methods** in a 6-card grid. Toggle between overlay and mask views. Each card shows method name, speed, and road coverage.
-
-### 4. 📦 Batch (`/batch`)
-Upload multiple images at once. Shows:
-- Summary stats (avg inference time, avg road %, avg confidence)
-- Per-image results with overlay thumbnails
-- **CSV report download** with all metrics
-
-### 5. ℹ️ About (`/about`)
+#### 3. ℹ️ About (`/about`)
 Architecture diagram, method comparison table, model specs, and team info.
+
+### Authenticated Pages (login required)
+
+#### 4. 📊 Dashboard (`/dashboard`)
+Personalized welcome page with quick-action cards and overview of saved results.
+
+#### 5. 📁 Past Results (`/results`)
+Full history of saved segmentation results with:
+- Summary stats (total results, avg road coverage, avg confidence, avg inference time)
+- Clickable result grid with thumbnails
+- Detail view with overlay/mask toggle and full metrics
+
+#### 6. 🔍 Segment (`/segment` — authenticated)
+Same as guest segment, but results are **automatically saved to the database**.
+
+#### 7. ⚔️ Compare (`/compare`)
+Upload one image, see **UNet vs 5 classical methods** in a 6-card grid. Toggle between overlay and mask views.
+
+#### 8. 📦 Batch (`/batch`)
+Upload multiple images at once. Summary stats, per-image results, and **CSV report download**.
 
 ---
 
 ## 📡 API Reference
+
+### Backend Endpoints (FastAPI)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -322,6 +409,14 @@ Architecture diagram, method comparison table, model specs, and team info.
 | `/download` | POST | ZIP with mask, overlay, heatmap, metrics JSON |
 
 Full interactive docs at **http://localhost:8000/docs**
+
+### Frontend API Routes (Next.js)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/*` | ALL | Better Auth handlers (login, register, session) |
+| `/api/segmentation/save` | POST | Save segmentation result to Neon DB |
+| `/api/segmentation/history` | GET | Fetch user's saved results |
 
 ---
 
@@ -384,14 +479,30 @@ ATLAS/
 │       └── model_config.json
 │
 ├── frontend/                         # Next.js Frontend
+│   ├── .env                          # Environment variables (gitignored)
+│   ├── middleware.ts                  # Route protection
+│   ├── lib/
+│   │   ├── auth.ts                   # Better Auth server config
+│   │   └── auth-client.ts            # Better Auth client hooks
 │   └── app/
-│       ├── layout.tsx                # Navbar + footer
+│       ├── layout.tsx                # Auth-aware navbar + footer
 │       ├── page.tsx                  # Home page
-│       ├── globals.css               # Dark theme (1300+ lines)
-│       ├── segment/page.tsx          # Segmentation + all interactive tools
+│       ├── globals.css               # Dark theme (1600+ lines)
+│       ├── components/
+│       │   └── Navbar.tsx            # Auth-aware navigation
+│       ├── sign-in/page.tsx          # Sign in (email + Google)
+│       ├── sign-up/page.tsx          # Sign up (email + Google)
+│       ├── dashboard/page.tsx        # User dashboard
+│       ├── results/page.tsx          # Past results history
+│       ├── segment/page.tsx          # Segmentation + all tools
 │       ├── compare/page.tsx          # Method comparison
 │       ├── batch/page.tsx            # Batch processing
-│       └── about/page.tsx            # About page
+│       ├── about/page.tsx            # About page
+│       └── api/
+│           ├── auth/[...all]/route.ts        # Better Auth API
+│           └── segmentation/
+│               ├── save/route.ts             # Save result to DB
+│               └── history/route.ts          # Get user's results
 │
 └── files/                            # Training Scripts
     ├── production_model_training.py
@@ -417,10 +528,12 @@ ATLAS/
 
 - **segmentation-models-pytorch** — UNet architecture
 - **Cityscapes Dataset** — Road segmentation annotations
+- **Better Auth** — Authentication framework
+- **Neon** — Serverless PostgreSQL
 - **Otsu (1979)** — Threshold selection method
 - **Sauvola et al. (2000)** — Adaptive document binarization
 
-**Technologies:** PyTorch · FastAPI · Next.js · OpenCV · TorchScript
+**Technologies:** PyTorch · FastAPI · Next.js · Better Auth · Neon PostgreSQL · OpenCV · TorchScript
 
 ---
 
@@ -438,7 +551,7 @@ MIT License — see [LICENSE](LICENSE) for details.
   author={Jaswanth Prasanna V and Divya R and Haripriya K},
   year={2026},
   institution={IIT Madras},
-  note={Full-stack AI road segmentation with UNet, classical methods, and interactive web UI}
+  note={Full-stack AI road segmentation with UNet, classical methods, authentication, and interactive web UI}
 }
 ```
 
