@@ -514,7 +514,7 @@ ATLAS/
 
 ## 👥 Team
 
-**ATLAS Development Team** — IIT Madras
+**ATLAS Development Team** 
 
 | Member | Role |
 |--------|------|
