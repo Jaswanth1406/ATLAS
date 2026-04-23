@@ -561,6 +561,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 **🗺️ ATLAS — Mapping Roads with Intelligence**
 
-Built with ❤️ at IIT Madras
-
 </div>
