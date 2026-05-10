@@ -39,8 +39,10 @@ next-env.d.ts
 *.onnx
 *.bin
 *.safetensors
-backend/models/
-files/models/
+
+# Keep model binaries ignored globally, but allow committed production models in backend/models via Git LFS
+!backend/models/*.pt
+!backend/models/*.onnx
 
 # ===== IDE & OS =====
 .DS_Store
