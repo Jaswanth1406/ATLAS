@@ -568,7 +568,7 @@ MIT License — see [LICENSE](LICENSE) for details.
   title={ATLAS: Adaptive Thresholding with Language-Augmented Sensing},
   author={Jaswanth Prasanna V and Divya R and Haripriya K},
   year={2026},
-  institution={IIT Madras},
+  institution={Rajalakshmi Institute of Technology},
   note={Full-stack AI road segmentation with UNet, classical methods, authentication, and interactive web UI}
 }
 ```
