@@ -79,9 +79,19 @@ class VideoProcessor:
             raise ValueError("Could not open video file")
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        orig_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        orig_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        # Downscale to max 480p to save memory on free-tier servers
+        MAX_HEIGHT = 480
+        if orig_height > MAX_HEIGHT:
+            scale = MAX_HEIGHT / orig_height
+            width = int(orig_width * scale)
+            height = MAX_HEIGHT
+        else:
+            width = orig_width
+            height = orig_height
 
         # Write with mp4v first (OpenCV reliable), then re-encode to H.264
         raw_path = output_path + ".raw.mp4"
@@ -114,6 +124,10 @@ class VideoProcessor:
             if max_frames > 0 and processed_count >= max_frames:
                 break
 
+            # Downscale frame if needed
+            if frame_bgr.shape[0] != height or frame_bgr.shape[1] != width:
+                frame_bgr = cv2.resize(frame_bgr, (width, height))
+
             # Convert BGR to RGB for model
             frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
 
@@ -145,6 +159,7 @@ class VideoProcessor:
 
         cap.release()
         out.release()
+        gc.collect()
 
         # Re-encode to H.264 for browser playback
         if self._reencode_h264(raw_path, output_path):

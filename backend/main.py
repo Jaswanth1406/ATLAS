@@ -8,6 +8,7 @@ import base64
 import os
 import time
 import zipfile
+import gc
 
 import cv2
 import numpy as np
@@ -504,6 +505,10 @@ async def predict_video(
         tmp_in.write(contents)
         input_path = tmp_in.name
 
+    # Free upload bytes immediately
+    del contents
+    gc.collect()
+
     output_path = input_path + "_output.mp4"
 
     try:
@@ -515,11 +520,18 @@ async def predict_video(
             sample_rate=sample_rate,
         )
 
+        # Delete input video BEFORE reading output to free memory
+        if os.path.exists(input_path):
+            os.unlink(input_path)
+        gc.collect()
+
         # Read the output video and encode as base64
         with open(output_path, "rb") as f:
             video_bytes = f.read()
 
         video_b64 = base64.b64encode(video_bytes).decode("utf-8")
+        del video_bytes
+        gc.collect()
 
         return JSONResponse({
             "video": video_b64,

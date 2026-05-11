@@ -38,8 +38,8 @@ export default function VideoPage() {
   const [previewOverlay, setPreviewOverlay] = useState<string | null>(null);
 
   const [threshold, setThreshold] = useState(0.5);
-  const [sampleRate, setSampleRate] = useState(2);
-  const [maxFrames, setMaxFrames] = useState(60);
+  const [sampleRate, setSampleRate] = useState(3);
+  const [maxFrames, setMaxFrames] = useState(30);
 
   const [result, setResult] = useState<VideoResult | null>(null);
   const [loading, setLoading] = useState(false);
