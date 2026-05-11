@@ -44,6 +44,7 @@ export default function VideoPage() {
   const [result, setResult] = useState<VideoResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [infoLoading, setInfoLoading] = useState(false);
+  const [updatingPreview, setUpdatingPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState("");
 
@@ -88,6 +89,30 @@ export default function VideoPage() {
     },
     [handleFile]
   );
+
+  const updatePreview = async () => {
+    if (!previewFrame) return;
+    setUpdatingPreview(true);
+    try {
+      const res = await fetch(`data:image/png;base64,${previewFrame}`);
+      const blob = await res.blob();
+      const form = new FormData();
+      form.append("file", blob, "preview.png");
+      
+      const predictRes = await fetch(`${API}/predict?threshold=${threshold}`, {
+        method: "POST",
+        body: form,
+      });
+      if (!predictRes.ok) throw new Error(await predictRes.text());
+      const data = await predictRes.json();
+      setPreviewOverlay(data.overlay);
+      setPreviewTab("overlay");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingPreview(false);
+    }
+  };
 
   const runVideoSegmentation = async () => {
     if (!file) return;
@@ -216,7 +241,12 @@ export default function VideoPage() {
               <div className="controls-row">
                 <div className="control-group">
                   <label>Threshold <span className="threshold-value">{threshold.toFixed(2)}</span></label>
-                  <input type="range" min="0.1" max="0.9" step="0.05" value={threshold} className="threshold-slider" onChange={(e) => setThreshold(parseFloat(e.target.value))} />
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input type="range" min="0.1" max="0.9" step="0.05" value={threshold} className="threshold-slider" onChange={(e) => setThreshold(parseFloat(e.target.value))} style={{ flex: 1 }} />
+                    <button className="btn btn-secondary" onClick={updatePreview} disabled={updatingPreview} style={{ padding: "6px 12px", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
+                      {updatingPreview ? "⏳" : "🔄 Update Preview"}
+                    </button>
+                  </div>
                 </div>
                 <div className="control-group">
                   <label>Sample Rate <span className="threshold-value">every {sampleRate}{sampleRate === 1 ? "st" : sampleRate === 2 ? "nd" : sampleRate === 3 ? "rd" : "th"} frame</span></label>
