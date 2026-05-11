@@ -72,6 +72,22 @@ def numpy_to_base64_png(img: np.ndarray) -> str:
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
+def numpy_to_base64_jpeg(img: np.ndarray, quality: int = 80, max_dim: int = 800) -> str:
+    """Convert a numpy image to a compressed base64-encoded JPEG string."""
+    h, w = img.shape[:2]
+    if max(h, w) > max_dim:
+        scale = max_dim / max(h, w)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)))
+
+    if len(img.shape) == 2:
+        pil_img = Image.fromarray(img, mode="L")
+    else:
+        pil_img = Image.fromarray(img, mode="RGB")
+    buf = io.BytesIO()
+    pil_img.save(buf, format="JPEG", quality=quality)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
 def read_upload_image(contents: bytes) -> np.ndarray:
     """Decode uploaded bytes to RGB numpy array."""
     nparr = np.frombuffer(contents, np.uint8)
@@ -445,12 +461,12 @@ async def video_info(file: UploadFile = File(...)):
 
     try:
         frame_rgb, info = video_processor.extract_preview_frame(tmp_path)
-        preview_b64 = numpy_to_base64_png(frame_rgb)
+        preview_b64 = numpy_to_base64_jpeg(frame_rgb)
 
         # Also run prediction on preview frame
         mask, prob_map, inference_ms = model.predict(frame_rgb, threshold=0.5)
         overlay = model.create_overlay(frame_rgb, mask)
-        overlay_b64 = numpy_to_base64_png(overlay)
+        overlay_b64 = numpy_to_base64_jpeg(overlay)
 
         total_px = mask.shape[0] * mask.shape[1]
         road_px = int(np.sum(mask > 0))

@@ -94,10 +94,10 @@ export default function VideoPage() {
     if (!previewFrame) return;
     setUpdatingPreview(true);
     try {
-      const res = await fetch(`data:image/png;base64,${previewFrame}`);
+      const res = await fetch(`data:image/jpeg;base64,${previewFrame}`);
       const blob = await res.blob();
       const form = new FormData();
-      form.append("file", blob, "preview.png");
+      form.append("file", blob, "preview.jpg");
       
       const predictRes = await fetch(`${API}/predict?threshold=${threshold}`, {
         method: "POST",
@@ -230,7 +230,7 @@ export default function VideoPage() {
                 <button className={`results-tab ${previewTab === "overlay" ? "active" : ""}`} onClick={() => setPreviewTab("overlay")}>🎨 Preview Overlay</button>
               </div>
               <div className="result-image-container">
-                <img src={`data:image/png;base64,${previewTab === "original" ? previewFrame : previewOverlay}`} alt="Preview" />
+                <img src={`data:image/jpeg;base64,${previewTab === "original" ? previewFrame : previewOverlay}`} alt="Preview" />
               </div>
             </div>
           )}
