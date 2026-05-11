@@ -9,6 +9,7 @@ import subprocess
 import shutil
 import os
 import time
+import gc
 from typing import Tuple
 
 
@@ -129,6 +130,16 @@ class VideoProcessor:
             road_px = int(np.sum(mask > 0))
             road_percentages.append(round(road_px / total_px * 100, 2))
             processed_count += 1
+            
+            # Prevent Out of Memory (OOM) on free-tier servers (Render 512MB)
+            del frame_bgr
+            del frame_rgb
+            del mask
+            del prob_map
+            del overlay_rgb
+            del overlay_bgr
+            if processed_count % 10 == 0:
+                gc.collect()
 
         total_time = (time.perf_counter() - start_time) * 1000
 
