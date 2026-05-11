@@ -60,7 +60,7 @@ Thumbs.db
 wandb/
 checkpoints/
 datasets/
-results/
+/results/
 create_table.js
 
 # ===== Gemini / AI Workspace =====
